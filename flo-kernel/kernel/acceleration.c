@@ -39,10 +39,9 @@ struct dev_acceleration {
  * convention to return 0 on success and the appropriate error value
  * on failure. 
  * syscall number 378
- struct dev_acceleration __user * acceleration
  */
  
-SYSCALL_DEFINE1(set_acceleration, struct dev_acceleration __user *, acceleration) {
+SYSCALL_DEFINE1(acceleration, struct dev_acceleration __user *, acceleration) {
 	return 0;
 }
 
