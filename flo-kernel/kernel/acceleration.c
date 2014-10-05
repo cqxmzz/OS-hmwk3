@@ -43,7 +43,7 @@ struct dev_acceleration {
  */
  
 SYSCALL_DEFINE1(set_acceleration, struct dev_acceleration __user *, acceleration) {
-	return test;
+	return 10;
 }
 
 /*
