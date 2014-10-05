@@ -4,7 +4,7 @@
  * (C) Copyright Team 1 @ 2014FALLW4118
  */
 
-
+/*
 #include <linux/cred.h>
 #include <linux/unistd.h>
 #include <linux/sched.h>
@@ -16,7 +16,7 @@
 #include <linux/uaccess.h>
 #include <linux/slab.h>
 #include <asm/io.h>
-
+*/
 /*
  *Define time interval (ms)
  */
