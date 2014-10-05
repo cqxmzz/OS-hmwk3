@@ -41,7 +41,7 @@ struct dev_acceleration {
  * syscall number 378
  */
  
-SYSCALL_DEFINE1(acceleration, struct dev_acceleration __user *, acc) {
+SYSCALL_DEFINE1(acceleration, struct dev_acceleration __user *, buf) {
 	return 0;
 }
 
