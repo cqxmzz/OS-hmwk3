@@ -54,13 +54,18 @@ static int poll_sensor_data(struct sensors_poll_device_t *sensors_device)
 	ssize_t count = sensors_device->poll(sensors_device, buffer, minBufferSize);
 	int i;
 
-
+	struct dev_acceleration acc;
 	for (i = 0; i < count; ++i) {
 		if (buffer[i].sensor != effective_sensor)
 			continue;
 
 		/* At this point we should have valid data*/
         /* Scale it and pass it to kernel*/
+        
+        acc.x = 100 * buffer[i].acceleration.x;
+        acc.y = 100 * buffer[i].acceleration.y;
+        acc.z = 100 * buffer[i].acceleration.z;
+        syscall(378, &acc);
 		dbg("Acceleration: x= %0.2f, y= %0.2f, "
 			"z= %0.2f\n", buffer[i].acceleration.x,
 			buffer[i].acceleration.y, buffer[i].acceleration.z);
@@ -88,9 +93,10 @@ int main(int argc, char **argv)
 
 	/* Fill in daemon implementation around here */
 	printf("turn me into a daemon!\n");
-	while (1) {
+	//while (1) {
 		poll_sensor_data(sensors_device);
-	}
+	//}
+
 
 	return EXIT_SUCCESS;
 }

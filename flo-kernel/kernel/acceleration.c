@@ -4,7 +4,9 @@
  * (C) Copyright Team 1 @ 2014FALLW4118
  */
 #include <linux/syscalls.h>
-/*
+#include <linux/dev_acceleration.h>
+#include <linux/kernel.h>
+
 #include <linux/cred.h>
 #include <linux/unistd.h>
 #include <linux/sched.h>
@@ -16,22 +18,17 @@
 #include <linux/uaccess.h>
 #include <linux/slab.h>
 #include <asm/io.h>
-*/
+
 /*
  *Define time interval (ms)
  */
  
 #define TIME_INTERVAL  200
-/*
- * The data structure to be used for passing accelerometer data to the
- * kernel and storing the data in the kernel.
- */
 
-struct dev_acceleration {
-	int x; /* acceleration along X-axis */
-	int y; /* acceleration along Y-axis */
-	int z; /* acceleration along Z-axis */
-};
+/*
+*/
+struct dev_acceleration sensorData;
+EXPORT_SYMBOL(sensorData);
 /*
  * Set current device acceleration in the kernel.
  * The parameter acceleration is the pointer to the address
@@ -42,12 +39,19 @@ struct dev_acceleration {
  */
  
 SYSCALL_DEFINE1(acceleration, struct dev_acceleration __user *, buf) {
+	if (buf == NULL) {
+		return -EINVAL;
+	} 
+	if (access_ok(VERIFY_WRITE, buf, space_count * sizeof(struct prinfo)) == 0) {
+		return -EFAULT;
+	}
+	if (copy_from_user(extern struct dev_acceleration &sensorData, buf, sizeof(struct dev_acceleration)) != 0) {
+		return -EINVAL;
+	}
+	printk("sensorData:%d\n", extern struct dev_acceleration sensorData.x);
 	return 0;
 }
 
-/*
- * The guide on how to get an instance of the default acceleration
- * sensor is available here.
- */
+
 
  
