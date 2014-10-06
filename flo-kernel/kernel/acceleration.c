@@ -27,8 +27,8 @@
 
 /*
 */
-struct dev_acceleration sensorData;
-EXPORT_SYMBOL(sensorData);
+extern struct dev_acceleration sensorData;
+
 /*
  * Set current device acceleration in the kernel.
  * The parameter acceleration is the pointer to the address
@@ -39,18 +39,17 @@ EXPORT_SYMBOL(sensorData);
  */
  
 SYSCALL_DEFINE1(acceleration, struct dev_acceleration __user *, buf) {
+	struct dev_acceleration sensorData;
 	if (buf == NULL) {
 		return -EINVAL;
 	} 
-	if (access_ok(VERIFY_WRITE, buf, space_count * sizeof(struct prinfo)) == 0) {
-		return -EFAULT;
-	}
-	if (copy_from_user(extern struct dev_acceleration &sensorData, buf, sizeof(struct dev_acceleration)) != 0) {
+	if (copy_from_user(&sensorData, buf, sizeof(struct dev_acceleration)) != 0) {
 		return -EINVAL;
 	}
-	printk("sensorData:%d\n", extern struct dev_acceleration sensorData.x);
+	printk("sensorData:%d\n", sensorData.x);
 	return 0;
 }
+
 
 
 
