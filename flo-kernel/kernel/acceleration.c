@@ -46,7 +46,7 @@ SYSCALL_DEFINE1(acceleration, struct dev_acceleration __user *, buf) {
 	if (copy_from_user(&sensorData, buf, sizeof(struct dev_acceleration)) != 0) {
 		return -EINVAL;
 	}
-	printk("sensorData:%d\n", sensorData.x);
+	printk("<0>""sensorData:%d\n", sensorData.x);
 	return 0;
 }
 
