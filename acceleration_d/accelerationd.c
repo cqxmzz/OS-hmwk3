@@ -54,9 +54,9 @@ static void enumerate_sensors(const struct sensors_module_t *sensors);
 
 static int poll_sensor_data(struct sensors_poll_device_t *sensors_device)
 {
-    const size_t numEventMax = 16;
-    const size_t minBufferSize = numEventMax;
-    sensors_event_t buffer[minBufferSize];
+	const size_t numEventMax = 16;
+	const size_t minBufferSize = numEventMax;
+	sensors_event_t buffer[minBufferSize];
 	ssize_t count = sensors_device->poll(sensors_device, buffer, minBufferSize);
 	int i;
 
@@ -65,13 +65,13 @@ static int poll_sensor_data(struct sensors_poll_device_t *sensors_device)
 		if (buffer[i].sensor != effective_sensor)
 			continue;
 
-		/* At this point we should have valid data*/
-        /* Scale it and pass it to kernel*/
-        
-        acc.x = 100 * buffer[i].acceleration.x;
-        acc.y = 100 * buffer[i].acceleration.y;
-        acc.z = 100 * buffer[i].acceleration.z;
-        syscall(378, &acc);
+	/* At this point we should have valid data*/
+	/* Scale it and pass it to kernel*/
+
+	acc.x = 100 * buffer[i].acceleration.x;
+	acc.y = 100 * buffer[i].acceleration.y;
+	acc.z = 100 * buffer[i].acceleration.z;
+	syscall(378, &acc);
 		dbg("Acceleration: x= %0.2f, y= %0.2f, "
 			"z= %0.2f\n", buffer[i].acceleration.x,
 			buffer[i].acceleration.y, buffer[i].acceleration.z);
@@ -118,13 +118,12 @@ int main(int argc, char **argv)
 		exit(EXIT_FAILURE);
 	}
 	close(STDIN_FILENO);
-	//close(STDOUT_FILENO);
+	close(STDOUT_FILENO);
 	close(STDERR_FILENO);
 
 	while (1) {
 		/* Do some task here ... */
 		poll_sensor_data(sensors_device);  
-		//sleep(30); /* wait 30 seconds */
 		usleep(TIME_INTERVAL);
 	}
 	return EXIT_SUCCESS;
