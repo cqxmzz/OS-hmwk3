@@ -34,8 +34,6 @@
 #define SENSORS_ORIENTATION    (1<<ID_ORIENTATION)
 #define SENSORS_TEMPERATURE    (1<<ID_TEMPERATURE)
 
-
-#define __NR_set_acceleration 378
 #define TIME_INTERVAL  200
 
 /* set to 1 for a bit of debug output */
