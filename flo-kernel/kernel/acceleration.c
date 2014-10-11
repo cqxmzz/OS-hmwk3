@@ -4,7 +4,7 @@
  * (C) Copyright Team 1 @ 2014FALLW4118
  */
 #include <linux/syscalls.h>
-#include <linux/dev_acceleration.h>
+#include <linux/acceleration.h>
 #include <linux/kernel.h>
 
 #include <linux/cred.h>

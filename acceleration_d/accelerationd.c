@@ -14,8 +14,8 @@
 #include <sys/ioctl.h>
 #include <hardware/hardware.h>
 #include <hardware/sensors.h> /* <-- This is a good place to look! */
-#include "../flo-kernel/include/linux/akm8975.h" 
-#include "acceleration.h"
+#include <linux/akm8975.h>
+#include <linux/acceleration.h>
 
 #include <sys/types.h>
 #include <sys/stat.h>
