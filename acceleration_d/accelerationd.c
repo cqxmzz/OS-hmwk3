@@ -21,7 +21,7 @@
 #include <sys/stat.h>
 #include <errno.h>
 #include <syslog.h>
-#include <linux/syscalls.h>
+#include <sys/syscall.h>
 
 /* from sensors.c */
 #define ID_ACCELERATION   (0)
@@ -36,7 +36,7 @@
 
 
 #define __NR_set_acceleration 378
-
+#define TIME_INTERVAL  200
 
 /* set to 1 for a bit of debug output */
 #if 1
@@ -98,17 +98,17 @@ int main(int argc, char **argv)
 
 
 	/*Citation: http://www.netzmafia.de/skripten/unix/linux-daemon-howto.html*/
-    
-    pid_t pid, sid;
 
-    pid = fork();
-    if (pid < 0) {
-        exit(EXIT_FAILURE);
-    }
+	pid_t pid, sid;
 
-    if (pid > 0) {
-    	exit(EXIT_SUCCESS);
-    }
+	pid = fork();
+	if (pid < 0) {
+		exit(EXIT_FAILURE);
+	}
+
+	if (pid > 0) {
+		exit(EXIT_SUCCESS);
+	}
 	umask(0);
 	sid = setsid();
 	if (sid < 0) {
@@ -118,19 +118,15 @@ int main(int argc, char **argv)
 		exit(EXIT_FAILURE);
 	}
 	close(STDIN_FILENO);
-	close(STDOUT_FILENO);
+	//close(STDOUT_FILENO);
 	close(STDERR_FILENO);
 
-//	while (1) {
+	while (1) {
 		/* Do some task here ... */
 		poll_sensor_data(sensors_device);  
-//		sleep(30); /* wait 30 seconds */
-//	}
-   
-}
-
-
-
+		//sleep(30); /* wait 30 seconds */
+		usleep(TIME_INTERVAL);
+	}
 	return EXIT_SUCCESS;
 }
 
