@@ -32,7 +32,7 @@ struct dev_acceleration sensorData;
  * syscall number 378
  */
  
-SYSCALL_DEFINE1(acceleration, struct dev_acceleration __user *, buf) {
+SYSCALL_DEFINE1(set_acceleration, struct dev_acceleration __user *, buf) {
 	if (buf == NULL) {
 		return -EINVAL;
 	} 
