@@ -37,7 +37,7 @@ struct motionArray {
 
 struct motionStruct {
      struct acc_motion *motion;
-     //struct //queue
+     wait_queue_head_t *q;
 };
 
 extern struct motionArray array;
@@ -73,8 +73,10 @@ int find_next_place(void)
 	{
 		array.structs = kmalloc(10 * sizeof(struct motionStruct), __GFP_NORETRY);
 		array.size = 10;
-		for (i = 0; i < 10; ++i)
+		for (i = 0; i < 10; ++i) {
 			array.structs[i].motion = NULL;
+			array.structs[i].q = NULL;
+		}
 		array.head = 0;
 	}
 	for (i = 0; i < array.size; ++i)
@@ -88,8 +90,10 @@ int find_next_place(void)
 	array.structs = krealloc(array.structs, sizeof(struct motionStruct) * array.size * 2, __GFP_NORETRY); //handle error	
 	array.head = array.size;
 	array.size = array.size * 2;
-	for (i = array.size/2; i < array.size; ++i)
+	for (i = array.size/2; i < array.size; ++i) {
 		array.structs[i].motion = NULL;
+		array.structs[i].q = NULL;
+	}
 	return array.head;
 }
 
@@ -99,11 +103,12 @@ SYSCALL_DEFINE1(accevt_create, struct acc_motion __user *, acceleration) {
 		return -EINVAL;
 	place = find_next_place();//handle error
 	array.structs[place].motion = kmalloc(sizeof(struct acc_motion), __GFP_NORETRY);
+	array.structs[place].q = kmalloc(sizeof(wait_queue_head_t), __GFP_NORETRY);
 	if (copy_from_user(array.structs[place].motion, acceleration, sizeof(struct acc_motion)) != 0)
 		return -EINVAL;
+	init_waitqueue_head(array.structs[place].q);
 	if (array.structs[place].motion->frq > WINDOW)
 		array.structs[place].motion->frq = WINDOW;
-	//initialize wait queue
 	return place;
 }
 
@@ -114,7 +119,14 @@ SYSCALL_DEFINE1(accevt_create, struct acc_motion __user *, acceleration) {
  */
 SYSCALL_DEFINE1(accevt_wait, int, event_id) {
 	printk("add to wait queue");
-	//add to wait queue
+	
+	DECLARE_WAITQUEUE(wait,current);
+	add_wait_queue(array.structs[event_id].q, &wait);
+	prepare_to_wait();
+	schedule();
+	
+	finish_wait();
+	remove_wait_queue(array.structs[event_id].q, &wait);
 	return 0;
 }
 
@@ -172,8 +184,8 @@ SYSCALL_DEFINE1(accevt_signal, struct dev_acceleration __user *, acceleration) {
 			&& sumy > array.structs[i].motion->dlt_y 
 			&& sumz > array.structs[i].motion->dlt_z 
 			&& count > array.structs[i].motion->frq)
-		printk("wake wait queue%d\n", i);
-	}
+		wake_up(array.structs[i].q);
+	} 
 	return 0;
 }
 
@@ -182,8 +194,10 @@ SYSCALL_DEFINE1(accevt_signal, struct dev_acceleration __user *, acceleration) {
  * system call number 382
  */
 SYSCALL_DEFINE1(accevt_destroy, int, event_id) {
-	printk("clear wait queue");
+	wake_up(array.structs[event_id].q);
+	kfree(array.structs[event_id].q);
 	kfree(array.structs[event_id].motion);//handle error
+	array.structs[event_id].q = NULL;
 	array.structs[event_id].motion = NULL;
 	return 0;
 }
