@@ -66,12 +66,12 @@ void add_buffer(struct dev_acceleration *sensorData)
  * system call number 379
  */
 
-int find_next_place()
+int find_next_place(void)
 {
 	int i;
 	if (array.structs == NULL)
 	{
-		array.structs = kmalloc(10 * sizeof(motionStruct));
+		array.structs = kmalloc(10 * sizeof(struct motionStruct), __GFP_NORETRY);
 		array.size = 10;
 		array.head = 0;
 	}
@@ -83,7 +83,7 @@ int find_next_place()
 			return tmp;
 		}
 	}
-	array.structs = krealloc(array.structs, sizeof(motionStruct) * array.size * 2); //handle error
+	array.structs = krealloc(array.structs, sizeof(struct motionStruct) * array.size * 2, __GFP_NORETRY); //handle error
 	array.head = array.size;
 	array.size = array.size * 2;
 }
@@ -92,11 +92,11 @@ SYSCALL_DEFINE1(accevt_create, struct acc_motion __user *, acceleration) {
 	if (acceleration == NULL)
 		return -EINVAL;
 	int place = find_next_place();//handle error
-	array.struct[place].motion = kmalloc(sizeof(struct acc_motion));
-	if (copy_from_user(array.struct[place].motion, acceleration, sizeof(struct acc_motion)) != 0)
+	array.structs[place].motion = kmalloc(sizeof(struct acc_motion), __GFP_NORETRY);
+	if (copy_from_user(array.structs[place].motion, acceleration, sizeof(struct acc_motion)) != 0)
 		return -EINVAL;
-	if (array.struct[place].motion->frq > WINDOW)
-		array.struct[place].motion->frq = WINDOW;
+	if (array.structs[place].motion->frq > WINDOW)
+		array.structs[place].motion->frq = WINDOW;
 	//initialize wait queue
 	return place;
 }
@@ -138,7 +138,7 @@ SYSCALL_DEFINE1(accevt_signal, struct dev_acceleration __user *, acceleration) {
 		return -EINVAL;
 	}
 	add_buffer(&sensor_data);
-	printk("<0>""sensor data:%d,%d,%d\n", sensor_data->x, sensor_data->y, sensor_data->z);
+	printk("<0>""sensor data:%d,%d,%d\n", sensor_data.x, sensor_data.y, sensor_data.z);
 	for (i = 0; i < array.size; ++i) {
 		count = 0;
 		sumx = 0;
@@ -172,8 +172,8 @@ SYSCALL_DEFINE1(accevt_signal, struct dev_acceleration __user *, acceleration) {
  */
 SYSCALL_DEFINE1(accevt_destroy, int, event_id) {
 	printk("clear wait queue");
-	kfree(array.struct[event_id].motion);//handle error
-	array.struct[event_id].motion = NULL;
+	kfree(array.structs[event_id].motion);//handle error
+	array.structs[event_id].motion = NULL;
 	return 0;
 }
 
