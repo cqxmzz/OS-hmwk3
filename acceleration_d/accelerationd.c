@@ -34,8 +34,8 @@
 #define SENSORS_ORIENTATION    (1<<ID_ORIENTATION)
 #define SENSORS_TEMPERATURE    (1<<ID_TEMPERATURE)
 
-#define TIME_INTERVAL  200
-#define SENSOR_DELAY 200
+#define TIME_INTERVAL 100
+#define SENSOR_DELAY 100
 
 /* set to 1 for a bit of debug output */
 #if 1
