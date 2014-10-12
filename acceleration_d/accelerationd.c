@@ -118,14 +118,6 @@ int main(int argc, char **argv)
 	}
 	enumerate_sensors(sensors_module);
 
-	struct acc_motion motion1 = {3000, 0, 0, 10};
-	struct acc_motion motion2 = {0, 3000, 0, 10};
-	struct acc_motion motion3 = {0, 0, 3000, 10};
-
-	syscall(379, &motion1);	
-	syscall(379, &motion2);	
-	syscall(379, &motion3);	
-
 	while (1) {
 		/* Do some task here ... */
 		poll_sensor_data(sensors_device);  
