@@ -118,14 +118,12 @@ SYSCALL_DEFINE1(accevt_create, struct acc_motion __user *, acceleration) {
  * system call number 380
  */
 SYSCALL_DEFINE1(accevt_wait, int, event_id) {
-	printk("add to wait queue");
-	
 	DECLARE_WAITQUEUE(wait,current);
 	add_wait_queue(array.structs[event_id].q, &wait);
-	prepare_to_wait();
+	prepare_to_wait(array.structs[event_id].q, &wait, TASK_UNINTERRUPTIBLE);
 	schedule();
 	
-	finish_wait();
+	finish_wait(array.structs[event_id].q, &wait);
 	remove_wait_queue(array.structs[event_id].q, &wait);
 	return 0;
 }
