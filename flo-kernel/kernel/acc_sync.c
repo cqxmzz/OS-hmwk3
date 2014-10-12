@@ -86,12 +86,14 @@ int find_next_place(void)
 	array.structs = krealloc(array.structs, sizeof(struct motionStruct) * array.size * 2, __GFP_NORETRY); //handle error
 	array.head = array.size;
 	array.size = array.size * 2;
+	return array.head;
 }
 
 SYSCALL_DEFINE1(accevt_create, struct acc_motion __user *, acceleration) {
+	int place;
 	if (acceleration == NULL)
 		return -EINVAL;
-	int place = find_next_place();//handle error
+	place = find_next_place();//handle error
 	array.structs[place].motion = kmalloc(sizeof(struct acc_motion), __GFP_NORETRY);
 	if (copy_from_user(array.structs[place].motion, acceleration, sizeof(struct acc_motion)) != 0)
 		return -EINVAL;
@@ -131,10 +133,10 @@ SYSCALL_DEFINE1(accevt_signal, struct dev_acceleration __user *, acceleration) {
 	int sumx;
 	int sumy;
 	int sumz;
-	if (buf == NULL) {
+	if (acceleration == NULL) {
 		return -EINVAL;
 	}
-	if (copy_from_user(&sensor_data, buf, sizeof(struct dev_acceleration)) != 0) {
+	if (copy_from_user(&sensor_data, acceleration, sizeof(struct dev_acceleration)) != 0) {
 		return -EINVAL;
 	}
 	add_buffer(&sensor_data);
