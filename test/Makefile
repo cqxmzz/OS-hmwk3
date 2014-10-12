@@ -1,9 +1,9 @@
-#CC := arm-none-linux-gnueabi-gcc
-#LD := arm-none-linux-gnueabi-gcc
-CC := gcc
-LD := gcc
-CFLAGS := -g -Wall -Werror #-static
-# LDFLAGS := -static
+CC := arm-none-linux-gnueabi-gcc
+LD := arm-none-linux-gnueabi-gcc
+# CC := gcc
+# LD := gcc
+CFLAGS := -g -Wall -Werror -static
+LDFLAGS := -static
 
 OBJECTS := AccTest.o
 
