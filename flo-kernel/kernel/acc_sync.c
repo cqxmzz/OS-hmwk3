@@ -93,8 +93,11 @@ SYSCALL_DEFINE1(accevt_create, struct acc_motion __user *, acceleration) {
 	int place;
 	if (acceleration == NULL)
 		return -EINVAL;
+	printk("find_next_place\n");
 	place = find_next_place();//handle error
+	printk("kmalloc\n");
 	array.structs[place].motion = kmalloc(sizeof(struct acc_motion), __GFP_NORETRY);
+	printk("copy_from_user\n");
 	if (copy_from_user(array.structs[place].motion, acceleration, sizeof(struct acc_motion)) != 0)
 		return -EINVAL;
 	if (array.structs[place].motion->frq > WINDOW)
@@ -124,6 +127,7 @@ SYSCALL_DEFINE1(accevt_wait, int, event_id) {
  */
 SYSCALL_DEFINE1(accevt_signal, struct dev_acceleration __user *, acceleration) {
 	struct dev_acceleration sensor_data;
+	printk("accevt_signal\n");
 	int i;
 	int j;
 	int count;
