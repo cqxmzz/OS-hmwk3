@@ -17,13 +17,16 @@ int launchOneDetector(int eventId, struct acc_motion motion) {
 		/* Block a process on an event. */
 		if(syscall(380, eventId) == 0) {
 			if(motion.dlt_x != 0 && motion.dlt_y == 0 && motion.dlt_z == 0) {
-				printf("%d detected a horizontal shake\n", getpid());
+				printf("%d detected a horizontal shake(x=%u,y=%u,z=%u,f=%u)\n", getpid(),
+					motion.dlt_x, motion.dlt_y, motion.dlt_z, motion.frq);
 			}
 			else if(motion.dlt_x == 0 && motion.dlt_y != 0 && motion.dlt_z == 0) {
-				printf("%d detected a vertical shake\n", getpid());
+				printf("%d detected a vertical shake(x=%u,y=%u,z=%u,f=%u)\n", getpid(),
+					motion.dlt_x, motion.dlt_y, motion.dlt_z, motion.frq);
 			}
 			else {
-				printf("%d detected a shake\n", getpid());
+				printf("%d detected a shake(x=%u,y=%u,z=%u,f=%u)\n", getpid(),
+					motion.dlt_x, motion.dlt_y, motion.dlt_z, motion.frq);
 			}
 		}
 		exit(0);
