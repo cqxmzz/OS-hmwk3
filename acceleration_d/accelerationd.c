@@ -118,8 +118,38 @@ int main(int argc, char **argv)
 	}
 	enumerate_sensors(sensors_module);
 
-	struct acc_motion motion1 = {100, 0, 0, 5};
-	syscall(381, &motion1);	
+	struct acc_motion motion1 = {3000, 0, 0, 10};
+	struct acc_motion motion2 = {3000, 0, 0, 10};
+	struct acc_motion motion3 = {3000, 0, 0, 10};
+	struct acc_motion motion4 = {3000, 0, 0, 10};
+	struct acc_motion motion5 = {3000, 0, 0, 10};
+	struct acc_motion motion6 = {0, 3000, 0, 10};
+	struct acc_motion motion7 = {0, 3000, 0, 10};
+	struct acc_motion motion8 = {0, 3000, 0, 10};
+	struct acc_motion motion9 = {0, 3000, 0, 10};
+	struct acc_motion motion10 = {0, 3000, 0, 10};
+	struct acc_motion motion11 = {0, 0, 3000, 10};
+	struct acc_motion motion12 = {0, 0, 3000, 10};
+	struct acc_motion motion13 = {0, 0, 3000, 10};
+	struct acc_motion motion14 = {0, 0, 3000, 10};
+	struct acc_motion motion15 = {0, 0, 3000, 10};
+
+	syscall(379, &motion1);	
+	syscall(379, &motion2);	
+	syscall(379, &motion3);	
+	syscall(379, &motion4);	
+	syscall(379, &motion5);	
+	syscall(379, &motion6);	
+	syscall(379, &motion7);	
+	syscall(379, &motion8);	
+	syscall(379, &motion9);	
+	syscall(379, &motion10);	
+	syscall(379, &motion11);	
+	syscall(379, &motion12);	
+	syscall(379, &motion13);	
+	syscall(379, &motion14);	
+	syscall(379, &motion15);	
+
 
 	while (1) {
 		/* Do some task here ... */

@@ -73,6 +73,8 @@ int find_next_place(void)
 	{
 		array.structs = kmalloc(10 * sizeof(struct motionStruct), __GFP_NORETRY);
 		array.size = 10;
+		for (i = 0; i < 10; ++i)
+			array.structs[i].motion = NULL;
 		array.head = 0;
 	}
 	for (i = 0; i < array.size; ++i)
@@ -83,9 +85,11 @@ int find_next_place(void)
 			return tmp;
 		}
 	}
-	array.structs = krealloc(array.structs, sizeof(struct motionStruct) * array.size * 2, __GFP_NORETRY); //handle error
+	array.structs = krealloc(array.structs, sizeof(struct motionStruct) * array.size * 2, __GFP_NORETRY); //handle error	
 	array.head = array.size;
 	array.size = array.size * 2;
+	for (i = array.size/2; i < array.size; ++i)
+		array.structs[i].motion = NULL;
 	return array.head;
 }
 
@@ -93,11 +97,8 @@ SYSCALL_DEFINE1(accevt_create, struct acc_motion __user *, acceleration) {
 	int place;
 	if (acceleration == NULL)
 		return -EINVAL;
-	printk("find_next_place\n");
 	place = find_next_place();//handle error
-	printk("kmalloc\n");
 	array.structs[place].motion = kmalloc(sizeof(struct acc_motion), __GFP_NORETRY);
-	printk("copy_from_user\n");
 	if (copy_from_user(array.structs[place].motion, acceleration, sizeof(struct acc_motion)) != 0)
 		return -EINVAL;
 	if (array.structs[place].motion->frq > WINDOW)
@@ -127,7 +128,6 @@ SYSCALL_DEFINE1(accevt_wait, int, event_id) {
  */
 SYSCALL_DEFINE1(accevt_signal, struct dev_acceleration __user *, acceleration) {
 	struct dev_acceleration sensor_data;
-	printk("accevt_signal\n");
 	int i;
 	int j;
 	int count;
@@ -158,7 +158,10 @@ SYSCALL_DEFINE1(accevt_signal, struct dev_acceleration __user *, acceleration) {
 			difx = sensorDataBuffer[j].x - sensorDataBuffer[(j + 1) % WINDOW].x;
 			dify = sensorDataBuffer[j].y - sensorDataBuffer[(j + 1) % WINDOW].y;
 			difz = sensorDataBuffer[j].z - sensorDataBuffer[(j + 1) % WINDOW].z;
-			if (difx + dify + difz > NOISE)
+			difx = difx > 0 ? difx : -difx;
+			dify = dify > 0 ? dify : -dify;
+			difz = difz > 0 ? difz : -difz;
+			if (difx + dify + difz <= NOISE)
 				continue;
 			count = count + 1;
 			sumx += difx;
@@ -169,7 +172,7 @@ SYSCALL_DEFINE1(accevt_signal, struct dev_acceleration __user *, acceleration) {
 			&& sumy > array.structs[i].motion->dlt_y 
 			&& sumz > array.structs[i].motion->dlt_z 
 			&& count > array.structs[i].motion->frq)
-		printk("wake wait queue%d", i);
+		printk("wake wait queue%d\n", i);
 	}
 	return 0;
 }
