@@ -36,7 +36,8 @@ int main(int argc, const char *argv[]) {
 			// printf("%u %u %u %u\n", x, y, z, frq);
 			launchOneDetector(eventQueue[i]);
 		}
-		sleep(70);
+		sleep(15);
+
 		for(i = 0; i < numberOfDetectors; i++) {
 			syscall(382, eventQueue[i]);
 		}
