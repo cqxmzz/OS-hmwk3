@@ -4,23 +4,32 @@
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <sys/syscall.h>
-// #include <string.h>
-// #include <errno.h>
 #include "../flo-kernel/include/linux/acc_sync.h"
 
-int launchOneDetector(int eventId);
 #define MAX 20
-int main(int argc, const char *argv[]) {
 
-	// char *line = NULL;
-	// size_t len = 0;
-	// ssize_t n = 0;
+int launchOneDetector(int eventId) {
+	pid_t pid = fork();
+	if (pid < 0) {
+	exit(1);
+	}
+	if(pid == 0) {
+		/* Block a process on an event. */
+		syscall(380, eventId);
+		printf("%d detected a shake\n", getpid());
+		exit(0);
+		// exit(syscall(380, eventId));
+	}
+
+	return 0;
+}
+int main(int argc, const char *argv[]) {
 	int numberOfDetectors;
 	int eventQueue[MAX];
 	unsigned int x, y, z, frq;
 	struct acc_motion motion;
 	FILE* input;
-	if((input = fopen("input", "r"))!=NULL){
+	if((input = fopen("input", "r")) != NULL){
 		fscanf(input, "%i\n", &numberOfDetectors);
 		if(numberOfDetectors > MAX){
 			numberOfDetectors = MAX;
@@ -32,8 +41,8 @@ int main(int argc, const char *argv[]) {
 			motion.dlt_y = y;
 			motion.dlt_z = z;
 			motion.frq = frq;
+			/* Create an event based on motion. */
 			eventQueue[i] = syscall(379, &motion);
-			// printf("%u %u %u %u\n", x, y, z, frq);
 			launchOneDetector(eventQueue[i]);
 		}
 		sleep(15);
@@ -46,34 +55,5 @@ int main(int argc, const char *argv[]) {
 
 	}
 	fclose(input);
-	return 0;
-}
-
-int launchOneDetector(int eventId) {
-  pid_t pid = fork();
-  //int status=1;
-  // errno = 0;
-
-  if (pid < 0) {
-      exit(1);
-  }
-	if(pid == 0) {
-				//int eventId;
-				// struct acc_motion acceleration = {10,30,7, 9};
-				/* Create an event based on motion. */
-				//eventId = syscall(379, &motion);
-				/* Block a process on an event. */
-				syscall(380, eventId);
-				printf("%d detected a shake\n", getpid());
-				exit(0);
-				// exit(syscall(380, eventId));
-	}
-	/*return value should = pid of child*/
-	//while (wait(&status) != pid);
-
-	//if(status == 0) {
-	//	printf("%d detected a shake\n", pid);
-	//}
-
 	return 0;
 }
