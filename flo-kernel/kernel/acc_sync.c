@@ -140,8 +140,10 @@ SYSCALL_DEFINE1(accevt_signal, struct dev_acceleration __user *, acceleration) {
 		return -EINVAL;
 	}
 	add_buffer(&sensor_data);
-	printk("<0>""sensor data:%d,%d,%d\n", sensor_data.x, sensor_data.y, sensor_data.z);
+	//printk("<0>""sensor data:%d,%d,%d\n", sensor_data.x, sensor_data.y, sensor_data.z);
 	for (i = 0; i < array.size; ++i) {
+		if (array.structs[i].motion == NULL)
+			continue;
 		count = 0;
 		sumx = 0;
 		sumy = 0;
@@ -163,7 +165,7 @@ SYSCALL_DEFINE1(accevt_signal, struct dev_acceleration __user *, acceleration) {
 			&& sumy > array.structs[i].motion->dlt_y 
 			&& sumz > array.structs[i].motion->dlt_z 
 			&& count > array.structs[i].motion->frq)
-		printk("wake wait queue");
+		printk("wake wait queue%d", i);
 	}
 	return 0;
 }
