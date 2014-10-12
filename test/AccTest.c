@@ -57,6 +57,7 @@ int main(int argc, const char *argv[]) {
 		sleep(65);
 
 		for(i = 0; i < numberOfDetectors; i++) {
+			/* Destroy an acceleration event using the event_id. */
 			syscall(382, eventQueue[i]);
 		}
 	}
