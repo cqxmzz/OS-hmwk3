@@ -14,8 +14,8 @@
 #include <sys/ioctl.h>
 #include <hardware/hardware.h>
 #include <hardware/sensors.h> /* <-- This is a good place to look! */
-#include <linux/akm8975.h>
-#include <linux/acceleration.h>
+#include "../flo-kernel/include/linux/akm8975.h"
+#include "acceleration.h"
 
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -34,9 +34,8 @@
 #define SENSORS_ORIENTATION    (1<<ID_ORIENTATION)
 #define SENSORS_TEMPERATURE    (1<<ID_TEMPERATURE)
 
-
-#define __NR_set_acceleration 378
 #define TIME_INTERVAL  200
+#define SENSOR_DELAY 200
 
 /* set to 1 for a bit of debug output */
 #if 1
@@ -84,21 +83,7 @@ static int poll_sensor_data(struct sensors_poll_device_t *sensors_device)
    where indicated */
 int main(int argc, char **argv)
 {
-	effective_sensor = -1;
-	struct sensors_module_t *sensors_module = NULL;
-	struct sensors_poll_device_t *sensors_device = NULL;
-
-	printf("Opening sensors...\n");
-	if (open_sensors(&sensors_module,
-			 &sensors_device) < 0) {
-		printf("open_sensors failed\n");
-		return EXIT_FAILURE;
-	}
-	enumerate_sensors(sensors_module);
-
-
 	/*Citation: http://www.netzmafia.de/skripten/unix/linux-daemon-howto.html*/
-
 	pid_t pid, sid;
 
 	pid = fork();
@@ -120,6 +105,18 @@ int main(int argc, char **argv)
 	close(STDIN_FILENO);
 	close(STDOUT_FILENO);
 	close(STDERR_FILENO);
+	
+	effective_sensor = -1;
+	struct sensors_module_t *sensors_module = NULL;
+	struct sensors_poll_device_t *sensors_device = NULL;
+
+	printf("Opening sensors...\n");
+	if (open_sensors(&sensors_module,
+			 &sensors_device) < 0) {
+		printf("open_sensors failed\n");
+		return EXIT_FAILURE;
+	}
+	enumerate_sensors(sensors_module);
 
 	while (1) {
 		/* Do some task here ... */
@@ -161,7 +158,7 @@ static int open_sensors(struct sensors_module_t **mSensorModule,
 	ssize_t count = (*mSensorModule)->get_sensors_list(*mSensorModule, &list);
 	size_t i;
 	for (i=0 ; i<(size_t)count ; i++) {
-		(*mSensorDevice)->setDelay(*mSensorDevice, list[i].handle, TIME_INTERVAL);
+		(*mSensorDevice)->setDelay(*mSensorDevice, list[i].handle, SENSOR_DELAY);
 		(*mSensorDevice)->activate(*mSensorDevice, list[i].handle, 1);
 	}
 	return 0;
