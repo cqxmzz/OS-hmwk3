@@ -19,10 +19,6 @@
 #include <linux/slab.h>
 #include <asm/io.h>
 
-extern struct dev_acceleration sensorData;
-
-struct dev_acceleration sensorData;
-
 /*
  * Set current device acceleration in the kernel.
  * The parameter acceleration is the pointer to the address
@@ -31,19 +27,16 @@ struct dev_acceleration sensorData;
  * on failure. 
  * syscall number 378
  */
- 
+extern struct dev_acceleration sensorData;
+struct dev_acceleration sensorData;
+
 SYSCALL_DEFINE1(set_acceleration, struct dev_acceleration __user *, buf) {
 	if (buf == NULL) {
 		return -EINVAL;
-	} 
+	}
 	if (copy_from_user(&sensorData, buf, sizeof(struct dev_acceleration)) != 0) {
 		return -EINVAL;
 	}
 	printk("<0>""sensorData:%d,%d,%d\n", sensorData.x, sensorData.y, sensorData.z);
 	return 0;
 }
-
-
-
-
- 
