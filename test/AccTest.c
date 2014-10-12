@@ -4,11 +4,11 @@
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <sys/syscall.h>
-#include <string.h>
-#include <errno.h>
+// #include <string.h>
+// #include <errno.h>
 #include "../flo-kernel/include/linux/acc_sync.h"
 
-int launchOneDetector(struct acc_motion motion);
+int launchOneDetector(int eventId);
 #define MAX 20
 int main(int argc, const char *argv[]) {
 
@@ -34,9 +34,12 @@ int main(int argc, const char *argv[]) {
 			motion.frq = frq;
 			eventQueue[i] = syscall(379, &motion);
 			// printf("%u %u %u %u\n", x, y, z, frq);
-			launchOneDetector(motion);
+			launchOneDetector(eventQueue[i]);
 		}
 		sleep(70);
+		for(i = 0; i < numberOfDetectors; i++) {
+			syscall(382, eventQueue[i]);
+		}
 	}
 	else {
 
@@ -45,10 +48,10 @@ int main(int argc, const char *argv[]) {
 	return 0;
 }
 
-int launchOneDetector(struct acc_motion motion) {
+int launchOneDetector(int eventId) {
   pid_t pid = fork();
   //int status=1;
-  errno = 0;
+  // errno = 0;
 
   if (pid < 0) {
       exit(1);
