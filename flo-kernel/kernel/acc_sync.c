@@ -29,7 +29,6 @@
 /*
  * locking
  */
-extern spinlock_t my_lock;
 spinlock_t my_lock = __SPIN_LOCK_UNLOCKED();
 
 /*
@@ -43,15 +42,13 @@ struct motionArray {
 };
 
 struct motionStruct {
-     struct acc_motion *motion;
-     wait_queue_head_t *q;
-     wait_queue_head_t *waking;
-     int flag;
-     int num;
-     int waking_num;
+	struct acc_motion *motion;
+	wait_queue_head_t *q;
+	wait_queue_head_t *waking;
+	int flag;
+	int num;
+	int waking_num;
 };
-
-extern struct motionArray array;
 
 struct motionArray array = {NULL, 0, 0};
 
@@ -61,16 +58,13 @@ struct motionArray array = {NULL, 0, 0};
 int sensorDataBufferHead = 0;
 struct dev_acceleration sensorDataBuffer[WINDOW];
 
-extern struct dev_acceleration sensorDataBuffer[WINDOW];
-extern int sensorDataBufferHead;
-
 void add_buffer(struct dev_acceleration *sensorData)
 {
 	sensorDataBufferHead = (sensorDataBufferHead + 1) % WINDOW;
 	sensorDataBuffer[sensorDataBufferHead] = *sensorData;
 }
 
-/* Create an event based on motion.  
+/* Create an event based on motion.
  * If frq exceeds WINDOW, cap frq at WINDOW.
  * Return an event_id on success and the appropriate error on failure.
  * system call number 379
@@ -81,9 +75,12 @@ int find_next_place(void)
 	int i;
 	int tmp;
 	void *pt;
-	if (array.structs == NULL)
-	{
-		array.structs = kmalloc(10 * sizeof(struct motionStruct), __GFP_NORETRY);
+
+	if (array.structs == NULL) {
+		array.structs = kmalloc(10 * sizeof(struct motionStruct)
+			, __GFP_NORETRY);
+		if (array.structs == NULL)
+			return -ENOMEM;
 		array.size = 10;
 		for (i = 0; i < 10; ++i) {
 			array.structs[i].motion = NULL;
@@ -95,17 +92,19 @@ int find_next_place(void)
 		}
 		array.head = 0;
 	}
-	for (i = 0; i < array.size; ++i)
-	{
+	for (i = 0; i < array.size; ++i) {
 		tmp = (i + array.head) % array.size;
-		if (array.structs[tmp].motion == NULL && array.structs[tmp].num == 0 && array.structs[tmp].waking_num == 0) {
+		if (array.structs[tmp].motion == NULL
+			&& array.structs[tmp].num == 0
+			&& array.structs[tmp].waking_num == 0) {
 			array.head = tmp;
 			return tmp;
 		}
 	}
-	if (array.size > 100)
+	if (array.size > 200)
 		return -ENOMEM;
-	pt = krealloc(array.structs, sizeof(struct motionStruct) * array.size * 2, __GFP_NORETRY);
+	pt = krealloc(array.structs
+		, sizeof(struct motionStruct) * array.size * 2, __GFP_NORETRY);
 	if (pt == NULL)
 		return -ENOMEM;
 	array.structs = pt;
@@ -125,24 +124,38 @@ int find_next_place(void)
 SYSCALL_DEFINE1(accevt_create, struct acc_motion __user *, acceleration) {
 	int place;
 	struct acc_motion tmpMotion;
+
 	if (acceleration == NULL)
 		return -EINVAL;
-	if (copy_from_user(&tmpMotion, acceleration, sizeof(struct acc_motion)) != 0)
+	if (copy_from_user(&tmpMotion, acceleration, sizeof(struct acc_motion))
+		!= 0)
 		return -EINVAL;
-	printk("%d %d %d %d\n", tmpMotion.dlt_x, tmpMotion.dlt_y, tmpMotion.dlt_z, tmpMotion.frq);
 	spin_lock(&my_lock);
-	printk("hold lock\n");
 	place = find_next_place();
-	printk("got place\n");
 	if (place < 0) {
-		printk("bad place\n");
 		spin_unlock(&my_lock);
 		return place;
 	}
-	printk("put value\n");
-	array.structs[place].motion = kmalloc(sizeof(struct acc_motion), __GFP_NORETRY);
-	array.structs[place].q = kmalloc(sizeof(wait_queue_head_t), __GFP_NORETRY);
-	array.structs[place].waking = kmalloc(sizeof(wait_queue_head_t), __GFP_NORETRY);
+	array.structs[place].motion = kmalloc(sizeof(struct acc_motion)
+		, __GFP_NORETRY);
+	if (array.structs[place].motion == NULL)
+		return -ENOMEM;
+	array.structs[place].q = kmalloc(sizeof(wait_queue_head_t)
+		, __GFP_NORETRY);
+	if (array.structs[place].q == NULL) {
+		kfree(array.structs[place].motion);
+		array.structs[place].motion = NULL;
+		return -ENOMEM;
+	}
+	array.structs[place].waking = kmalloc(sizeof(wait_queue_head_t)
+		, __GFP_NORETRY);
+	if (array.structs[place].waking == NULL) {
+		kfree(array.structs[place].motion);
+		array.structs[place].motion = NULL;
+		kfree(array.structs[place].q);
+		array.structs[place].q = NULL;
+		return -ENOMEM;
+	}
 	array.structs[place].flag = 0;
 	array.structs[place].num = 0;
 	array.structs[place].waking_num = 0;
@@ -151,9 +164,7 @@ SYSCALL_DEFINE1(accevt_create, struct acc_motion __user *, acceleration) {
 	init_waitqueue_head(array.structs[place].waking);
 	if (array.structs[place].motion->frq > WINDOW)
 		array.structs[place].motion->frq = WINDOW;
-	printk("unlock\n");
 	spin_unlock(&my_lock);
-	printk("return\n");
 	return place;
 }
 
@@ -164,11 +175,10 @@ SYSCALL_DEFINE1(accevt_create, struct acc_motion __user *, acceleration) {
  */
 SYSCALL_DEFINE1(accevt_wait, int, event_id) {
 	int ret;
-	DECLARE_WAITQUEUE(wait1,current);
-	DECLARE_WAITQUEUE(wait2,current);
-	printk("in wait\n");
+	DECLARE_WAITQUEUE(wait1, current);
+	DECLARE_WAITQUEUE(wait2, current);
+
 	spin_lock(&my_lock);
-	printk("in lock\n");
 	if (array.structs[event_id].flag == 2) {
 		spin_unlock(&my_lock);
 		return -EINVAL;
@@ -177,11 +187,11 @@ SYSCALL_DEFINE1(accevt_wait, int, event_id) {
 	spin_unlock(&my_lock);
 	add_wait_queue(array.structs[event_id].waking, &wait1);
 	while (array.structs[event_id].flag == 1) {
-		prepare_to_wait(array.structs[event_id].waking, &wait1, TASK_INTERRUPTIBLE);
+		prepare_to_wait(array.structs[event_id].waking, &wait1
+			, TASK_INTERRUPTIBLE);
 		schedule();
 	}
 	finish_wait(array.structs[event_id].waking, &wait1);
-	printk("pass wait 1\n");
 	spin_lock(&my_lock);
 	array.structs[event_id].waking_num--;
 	if (array.structs[event_id].flag == 2) {
@@ -194,26 +204,26 @@ SYSCALL_DEFINE1(accevt_wait, int, event_id) {
 	}
 	array.structs[event_id].num++;
 	spin_unlock(&my_lock);
-	
+
 	add_wait_queue(array.structs[event_id].q, &wait2);
 	while ((ret = array.structs[event_id].flag) == 0) {
-		prepare_to_wait(array.structs[event_id].q, &wait2, TASK_INTERRUPTIBLE);
+		prepare_to_wait(array.structs[event_id].q, &wait2
+			, TASK_INTERRUPTIBLE);
 		schedule();
 	}
 	finish_wait(array.structs[event_id].q, &wait2);
-	printk("pass wait 2\n");
-
 	spin_lock(&my_lock);
 	array.structs[event_id].num--;
-	if (array.structs[event_id].flag == 2 && array.structs[event_id].num == 0) {
+	if (array.structs[event_id].flag == 2
+		&& array.structs[event_id].num == 0) {
 		kfree(array.structs[event_id].q);
 		array.structs[event_id].q = NULL;
 	}
-	if (array.structs[event_id].flag == 1 && array.structs[event_id].num == 0) {
+	if (array.structs[event_id].flag == 1
+		&& array.structs[event_id].num == 0) {
 		array.structs[event_id].flag = 0;
 		wake_up(array.structs[event_id].waking);
 	}
-	printk("ending releasing lock\n");
 	spin_unlock(&my_lock);
 	if (ret == 1)
 		return 0;
@@ -223,7 +233,7 @@ SYSCALL_DEFINE1(accevt_wait, int, event_id) {
 /* The acc_signal system call
  * takes sensor data from user, stores the data in the kernel,
  * generates a motion calculation, and notify all open events whose
- * baseline is surpassed.  All processes waiting on a given event 
+ * baseline is surpassed.  All processes waiting on a given event
  * are unblocked.
  * Return 0 success and the appropriate error on failure.
  * system call number 381
@@ -239,13 +249,12 @@ SYSCALL_DEFINE1(accevt_signal, struct dev_acceleration __user *, acceleration) {
 	int sumy;
 	int sumz;
 	struct dev_acceleration sensor_data;
-	printk("signal\n");
-	if (acceleration == NULL) {
+
+	if (acceleration == NULL)
 		return -EINVAL;
-	}
-	if (copy_from_user(&sensor_data, acceleration, sizeof(struct dev_acceleration)) != 0) {
+	if (copy_from_user(&sensor_data, acceleration
+		, sizeof(struct dev_acceleration)) != 0)
 		return -EINVAL;
-	}
 	spin_lock(&my_lock);
 	add_buffer(&sensor_data);
 	for (i = 0; i < array.size; ++i) {
@@ -258,9 +267,12 @@ SYSCALL_DEFINE1(accevt_signal, struct dev_acceleration __user *, acceleration) {
 		for (j = 0; j < WINDOW; ++j) {
 			if (j == sensorDataBufferHead)
 				continue;
-			difx = sensorDataBuffer[j].x - sensorDataBuffer[(j + 1) % WINDOW].x;
-			dify = sensorDataBuffer[j].y - sensorDataBuffer[(j + 1) % WINDOW].y;
-			difz = sensorDataBuffer[j].z - sensorDataBuffer[(j + 1) % WINDOW].z;
+			difx = sensorDataBuffer[j].x - sensorDataBuffer[(j + 1)
+				% WINDOW].x;
+			dify = sensorDataBuffer[j].y - sensorDataBuffer[(j + 1)
+				% WINDOW].y;
+			difz = sensorDataBuffer[j].z - sensorDataBuffer[(j + 1)
+				% WINDOW].z;
 			difx = difx > 0 ? difx : -difx;
 			dify = dify > 0 ? dify : -dify;
 			difz = difz > 0 ? difz : -difz;
@@ -271,15 +283,13 @@ SYSCALL_DEFINE1(accevt_signal, struct dev_acceleration __user *, acceleration) {
 			sumy += dify;
 			sumz += difz;
 		}
-		if (sumx > array.structs[i].motion->dlt_x 
-			&& sumy > array.structs[i].motion->dlt_y 
-			&& sumz > array.structs[i].motion->dlt_z 
+		if (sumx > array.structs[i].motion->dlt_x
+			&& sumy > array.structs[i].motion->dlt_y
+			&& sumz > array.structs[i].motion->dlt_z
 			&& count > array.structs[i].motion->frq) {
 			array.structs[i].flag = 1;
 			wake_up(array.structs[i].q);
-			printk("signal%d\n", i);
 		}
-		
 	}
 	spin_unlock(&my_lock);
 	return 0;
