@@ -16,7 +16,10 @@ int launchOneDetector(int eventId, struct acc_motion motion)
 		exit(1);
 	if (pid == 0) {
 		/* Block a process on an event. */
+		printf("call wait\n");
 		if (syscall(380, eventId) == 0) {
+			
+			printf("call wait succeed\n");
 			if (motion.dlt_x != 0 && motion.dlt_y == 0
 				&& motion.dlt_z == 0) {
 				printf("%d detected a horizontal shake\n",
@@ -62,7 +65,9 @@ int main(int argc, const char *argv[])
 			motion.dlt_z = z;
 			motion.frq = frq;
 			/* Create an event based on motion. */
+			printf("call create\n");
 			eventQueue[i] = syscall(379, &motion);
+			printf("created%d\n", eventQueue[i]);
 			launchOneDetector(eventQueue[i], motion);
 		}
 		sleep(65);

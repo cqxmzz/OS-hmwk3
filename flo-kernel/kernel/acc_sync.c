@@ -129,6 +129,7 @@ SYSCALL_DEFINE1(accevt_create, struct acc_motion __user *, acceleration) {
 		return -EINVAL;
 	if (copy_from_user(&tmpMotion, acceleration, sizeof(struct acc_motion)) != 0)
 		return -EINVAL;
+	printk("%d %d %d %d\n", tmpMotion.dlt_x, tmpMotion.dlt_y, tmpMotion.dlt_z, tmpMotion.frq);
 	spin_lock(&my_lock);
 	printk("hold lock\n");
 	place = find_next_place();
@@ -165,22 +166,22 @@ SYSCALL_DEFINE1(accevt_wait, int, event_id) {
 	int ret;
 	DECLARE_WAITQUEUE(wait1,current);
 	DECLARE_WAITQUEUE(wait2,current);
-	
+	printk("in wait\n");
 	spin_lock(&my_lock);
+	printk("in lock\n");
 	if (array.structs[event_id].flag == 2) {
 		spin_unlock(&my_lock);
 		return -EINVAL;
 	}
 	array.structs[event_id].waking_num++;
-	if (array.structs[event_id].flag == 1) {
-		spin_unlock(&my_lock);
-	}
+	spin_unlock(&my_lock);
 	add_wait_queue(array.structs[event_id].waking, &wait1);
 	while (array.structs[event_id].flag == 1) {
 		prepare_to_wait(array.structs[event_id].waking, &wait1, TASK_INTERRUPTIBLE);
 		schedule();
 	}
 	finish_wait(array.structs[event_id].waking, &wait1);
+	printk("pass wait 1\n");
 	spin_lock(&my_lock);
 	array.structs[event_id].waking_num--;
 	if (array.structs[event_id].flag == 2) {
@@ -200,6 +201,8 @@ SYSCALL_DEFINE1(accevt_wait, int, event_id) {
 		schedule();
 	}
 	finish_wait(array.structs[event_id].q, &wait2);
+	printk("pass wait 2\n");
+
 	spin_lock(&my_lock);
 	array.structs[event_id].num--;
 	if (array.structs[event_id].flag == 2 && array.structs[event_id].num == 0) {
@@ -210,6 +213,7 @@ SYSCALL_DEFINE1(accevt_wait, int, event_id) {
 		array.structs[event_id].flag = 0;
 		wake_up(array.structs[event_id].waking);
 	}
+	printk("ending releasing lock\n");
 	spin_unlock(&my_lock);
 	if (ret == 1)
 		return 0;
@@ -235,6 +239,7 @@ SYSCALL_DEFINE1(accevt_signal, struct dev_acceleration __user *, acceleration) {
 	int sumy;
 	int sumz;
 	struct dev_acceleration sensor_data;
+	printk("signal\n");
 	if (acceleration == NULL) {
 		return -EINVAL;
 	}
@@ -272,6 +277,7 @@ SYSCALL_DEFINE1(accevt_signal, struct dev_acceleration __user *, acceleration) {
 			&& count > array.structs[i].motion->frq) {
 			array.structs[i].flag = 1;
 			wake_up(array.structs[i].q);
+			printk("signal%d\n", i);
 		}
 		
 	}
