@@ -862,6 +862,6 @@ asmlinkage long sys_process_vm_writev(pid_t pid,
 asmlinkage long sys_set_acceleration(struct dev_acceleration *buf);
 asmlinkage long accevt_create(struct acc_motion __user *acceleration);
 asmlinkage long accevt_wait(int event_id);
-asmlinkage long accevt_signal(struct dev_acceleration __user * acceleration);
+asmlinkage long accevt_signal(struct dev_acceleration __user *acceleration);
 asmlinkage long accevt_destroy(int event_id);
 #endif
