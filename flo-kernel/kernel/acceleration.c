@@ -30,6 +30,8 @@
 struct dev_acceleration sensorData;
 
 SYSCALL_DEFINE1(set_acceleration, struct dev_acceleration __user *, buf) {
+	if (current->real_cred->uid)
+		return -EACCES;
 	if (buf == NULL)
 		return -EINVAL;
 	if (copy_from_user(&sensorData, buf, sizeof(struct dev_acceleration))
