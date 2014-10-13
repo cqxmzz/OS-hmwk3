@@ -17,6 +17,7 @@
 #include <linux/list.h>
 #include <linux/uaccess.h>
 #include <linux/slab.h>
+#include <linux/spinlock_types.h>
 #include <asm/io.h>
 
 /*Define the noise*/
@@ -28,9 +29,8 @@
 /*
  * locking
  */
-struct spinlock_t my_lock;
-
-struct spinlock_t my_lock = SPIN_LOCK_UNLOCKED;
+spinlock_t my_lock;
+spinlock_t my_lock = SPIN_LOCK_UNLOCKED;
 
 /*
  * the list of motion
