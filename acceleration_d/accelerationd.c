@@ -56,10 +56,11 @@ static int poll_sensor_data(struct sensors_poll_device_t *sensors_device)
 	const size_t numEventMax = 16;
 	const size_t minBufferSize = numEventMax;
 	sensors_event_t buffer[minBufferSize];
-	ssize_t count = sensors_device->poll(sensors_device, buffer, minBufferSize);
+	ssize_t count = sensors_device->poll(sensors_device, buffer
+		, minBufferSize);
 	int i;
-
 	struct dev_acceleration acc;
+
 	for (i = 0; i < count; ++i) {
 		if (buffer[i].sensor != effective_sensor)
 			continue;
@@ -71,9 +72,9 @@ static int poll_sensor_data(struct sensors_poll_device_t *sensors_device)
 		acc.y = 100 * buffer[i].acceleration.y;
 		acc.z = 100 * buffer[i].acceleration.z;
 		syscall(381, &acc);
-		dbg("Acceleration: x= %0.2f, y= %0.2f, "
-			"z= %0.2f\n", buffer[i].acceleration.x,
-			buffer[i].acceleration.y, buffer[i].acceleration.z);
+		dbg("Acceleration: x= %0.2f, y= %0.2f, z= %0.2f\n"
+			, buffer[i].acceleration.x, buffer[i].acceleration.y
+			, buffer[i].acceleration.z);
 
 	}
 	return 0;
@@ -83,33 +84,27 @@ static int poll_sensor_data(struct sensors_poll_device_t *sensors_device)
    where indicated */
 int main(int argc, char **argv)
 {
-	/*Citation: http://www.netzmafia.de/skripten/unix/linux-daemon-howto.html*/
+	/*Citation: http://www.netzmafia.de/skripten/unix/
+	linux-daemon-howto.html*/
 	pid_t pid, sid;
-
-	pid = fork();
-	if (pid < 0) {
-		exit(EXIT_FAILURE);
-	}
-
-	if (pid > 0) {
-		exit(EXIT_SUCCESS);
-	}
-	umask(0);
-	sid = setsid();
-	if (sid < 0) {
-		exit(EXIT_FAILURE);
-	}
-	if ((chdir("/")) < 0) {
-		exit(EXIT_FAILURE);
-	}
-	close(STDIN_FILENO);
-	close(STDOUT_FILENO);
-	close(STDERR_FILENO);
-	
-	effective_sensor = -1;
 	struct sensors_module_t *sensors_module = NULL;
 	struct sensors_poll_device_t *sensors_device = NULL;
 
+	pid = fork();
+	if (pid < 0)
+		exit(EXIT_FAILURE);
+	if (pid > 0)
+		exit(EXIT_SUCCESS);
+	umask(0);
+	sid = setsid();
+	if (sid < 0)
+		exit(EXIT_FAILURE);
+	if ((chdir("/")) < 0)
+		exit(EXIT_FAILURE);
+	close(STDIN_FILENO);
+	close(STDOUT_FILENO);
+	close(STDERR_FILENO);
+	effective_sensor = -1;
 	printf("Opening sensors...\n");
 	if (open_sensors(&sensors_module,
 			 &sensors_device) < 0) {
@@ -120,7 +115,7 @@ int main(int argc, char **argv)
 
 	while (1) {
 		/* Do some task here ... */
-		poll_sensor_data(sensors_device);  
+		poll_sensor_data(sensors_device);
 		usleep(TIME_INTERVAL);
 	}
 	return EXIT_SUCCESS;
@@ -132,9 +127,9 @@ int main(int argc, char **argv)
 static int open_sensors(struct sensors_module_t **mSensorModule,
 			struct sensors_poll_device_t **mSensorDevice)
 {
-   
+
 	int err = hw_get_module(SENSORS_HARDWARE_MODULE_ID,
-				     (hw_module_t const**)mSensorModule);
+				     (hw_module_t const **)mSensorModule);
 
 	if (err) {
 		printf("couldn't load %s module (%s)",
@@ -155,10 +150,14 @@ static int open_sensors(struct sensors_module_t **mSensorModule,
 		return -1;
 
 	const struct sensor_t *list;
-	ssize_t count = (*mSensorModule)->get_sensors_list(*mSensorModule, &list);
+
+	ssize_t count = (*mSensorModule)
+		->get_sensors_list(*mSensorModule, &list);
 	size_t i;
-	for (i=0 ; i<(size_t)count ; i++) {
-		(*mSensorDevice)->setDelay(*mSensorDevice, list[i].handle, SENSOR_DELAY);
+
+	for (i = 0 ; i < (size_t)count ; i++) {
+		(*mSensorDevice)->setDelay(*mSensorDevice, list[i].handle
+			, SENSOR_DELAY);
 		(*mSensorDevice)->activate(*mSensorDevice, list[i].handle, 1);
 	}
 	return 0;
@@ -168,6 +167,7 @@ static void enumerate_sensors(const struct sensors_module_t *sensors)
 {
 	int nr, s;
 	const struct sensor_t *slist = NULL;
+
 	if (!sensors)
 		printf("going to fail\n");
 
@@ -179,8 +179,9 @@ static void enumerate_sensors(const struct sensors_module_t *sensors)
 	}
 
 	for (s = 0; s < nr; s++) {
-		printf("%s (%s) v%d\n\tHandle:%d, type:%d, max:%0.2f, "
-			"resolution:%0.2f \n", slist[s].name, slist[s].vendor,
+		printf(
+	"%s (%s) v%d\n\tHandle:%d, type:%d, max:%0.2f, resolution:%0.2f\n"
+			, slist[s].name, slist[s].vendor,
 			slist[s].version, slist[s].handle, slist[s].type,
 			slist[s].maxRange, slist[s].resolution);
 
@@ -188,5 +189,5 @@ static void enumerate_sensors(const struct sensors_module_t *sensors)
 		if (slist[s].type == 1 && slist[s].handle == 0)
 			effective_sensor = 0; /*the sensor ID*/
 
-                }
+	}
 }

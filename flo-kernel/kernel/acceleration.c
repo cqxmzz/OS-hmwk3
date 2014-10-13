@@ -24,19 +24,16 @@
  * The parameter acceleration is the pointer to the address
  * where the sensor data is stored in user space.  Follow system call
  * convention to return 0 on success and the appropriate error value
- * on failure. 
+ * on failure.
  * syscall number 378
  */
-extern struct dev_acceleration sensorData;
 struct dev_acceleration sensorData;
 
 SYSCALL_DEFINE1(set_acceleration, struct dev_acceleration __user *, buf) {
-	if (buf == NULL) {
+	if (buf == NULL)
 		return -EINVAL;
-	}
-	if (copy_from_user(&sensorData, buf, sizeof(struct dev_acceleration)) != 0) {
+	if (copy_from_user(&sensorData, buf, sizeof(struct dev_acceleration))
+		!= 0)
 		return -EINVAL;
-	}
-	//printk("<0>""sensorData:%d,%d,%d\n", sensorData.x, sensorData.y, sensorData.z);
 	return 0;
 }
