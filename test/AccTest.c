@@ -72,7 +72,7 @@ int main(int argc, const char *argv[])
 		printf("other format to finish\n");
 		for (i = 0; i < MAX; i++) {
 			printf("Type in one detector: ");
-			if (scanf("%u %u %u %u\n", &x, &y, &z, &frq) == 4) {
+			if (scanf("%u %u %u %u", &x, &y, &z, &frq) == 4) {
 				motion.dlt_x = x;
 				motion.dlt_y = y;
 				motion.dlt_z = z;
