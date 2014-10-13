@@ -40,6 +40,7 @@ int launchOneDetector(int eventId, struct acc_motion motion)
 	}
 	return 0;
 }
+
 int main(int argc, const char *argv[])
 {
 	int numberOfDetectors;
@@ -64,13 +65,30 @@ int main(int argc, const char *argv[])
 			eventQueue[i] = syscall(379, &motion);
 			launchOneDetector(eventQueue[i], motion);
 		}
-		sleep(65);
-		for (i = 0; i < numberOfDetectors; i++) {
-			/* Destroy an acceleration event using the event_id. */
-			syscall(382, eventQueue[i]);
-		}
+
 	} else {
 		printf("No Input File!\n");
+		printf("Input in format: dlt_x dlt_y dlt_z frq, ");
+		printf("other format to finish\n");
+		for (i = 0; i < MAX; i++) {
+			printf("Type in one detector: ");
+			if (scanf("%u %u %u %u\n", &x, &y, &z, &frq) == 4) {
+				motion.dlt_x = x;
+				motion.dlt_y = y;
+				motion.dlt_z = z;
+				motion.frq = frq;
+				/* Create an event based on motion. */
+				eventQueue[i] = syscall(379, &motion);
+				launchOneDetector(eventQueue[i], motion);
+			} else
+				break;
+		}
+		numberOfDetectors = i;
+	}
+	sleep(65);
+	for (i = 0; i < numberOfDetectors; i++) {
+		/* Destroy an acceleration event using the event_id. */
+		syscall(382, eventQueue[i]);
 	}
 	fclose(input);
 	return 0;
