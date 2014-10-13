@@ -79,13 +79,14 @@ void add_buffer(struct dev_acceleration *sensorData)
 int find_next_place(void)
 {
 	int i;
-	void *tmp;
+	int tmp;
+	void *pt;
 	if (array.structs == NULL)
 	{
 		array.structs = kmalloc(10 * sizeof(struct motionStruct), __GFP_NORETRY);
 		array.size = 10;
 		for (i = 0; i < 10; ++i) {
-			*(array.structs[i]) = {NULL, NULL, NULL, 0, 0, 0};
+			array.structs[i] = {NULL, NULL, NULL, 0, 0, 0};
 		}
 		array.head = 0;
 	}
@@ -99,14 +100,14 @@ int find_next_place(void)
 	}
 	if (array.size > 100)
 		return -ENOMEM;
-	tmp = krealloc(array.structs, sizeof(struct motionStruct) * array.size * 2, __GFP_NORETRY);
-	if (tmp == NULL)
+	pt = krealloc(array.structs, sizeof(struct motionStruct) * array.size * 2, __GFP_NORETRY);
+	if (pt == NULL)
 		return -ENOMEM;
-	array.structs = tmp;
+	array.structs = pt;
 	array.head = array.size;
 	array.size = array.size * 2;
 	for (i = array.size/2; i < array.size; ++i) {
-		*(array.structs[i]) = {NULL, NULL, NULL, 0, 0, 0};
+		array.structs[i] = {NULL, NULL, NULL, 0, 0, 0};
 	}
 	return array.head;
 }
