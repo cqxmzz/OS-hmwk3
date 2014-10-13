@@ -29,8 +29,8 @@
 /*
  * locking
  */
-spinlock_t my_lock;
-spinlock_t my_lock = SPIN_LOCK_UNLOCKED;
+extern spinlock_t my_lock;
+spinlock_t my_lock = __SPIN_LOCK_UNLOCKED();
 
 /*
  * the list of motion
@@ -79,13 +79,13 @@ void add_buffer(struct dev_acceleration *sensorData)
 int find_next_place(void)
 {
 	int i;
-	int tmp;
+	void *tmp;
 	if (array.structs == NULL)
 	{
 		array.structs = kmalloc(10 * sizeof(struct motionStruct), __GFP_NORETRY);
 		array.size = 10;
 		for (i = 0; i < 10; ++i) {
-			array.structs[i] = {NULL, NULL, NULL, 0, 0, 0};
+			*(array.structs[i]) = {NULL, NULL, NULL, 0, 0, 0};
 		}
 		array.head = 0;
 	}
@@ -100,22 +100,22 @@ int find_next_place(void)
 	if (array.size > 100)
 		return -ENOMEM;
 	tmp = krealloc(array.structs, sizeof(struct motionStruct) * array.size * 2, __GFP_NORETRY);
-	if (tmp < 0)
+	if (tmp == NULL)
 		return -ENOMEM;
-	array.structs = tmp
+	array.structs = tmp;
 	array.head = array.size;
 	array.size = array.size * 2;
 	for (i = array.size/2; i < array.size; ++i) {
-		array.structs[i] = {NULL, NULL, NULL, 0, 0, 0};
+		*(array.structs[i]) = {NULL, NULL, NULL, 0, 0, 0};
 	}
 	return array.head;
 }
 
 SYSCALL_DEFINE1(accevt_create, struct acc_motion __user *, acceleration) {
 	int place;
+	struct acc_motion tmpMotion;
 	if (acceleration == NULL)
 		return -EINVAL;
-	struct acc_motion tmpMotion;
 	if (copy_from_user(&tmpMotion, acceleration, sizeof(struct acc_motion)) != 0)
 		return -EINVAL;
 	spin_lock(&my_lock);
@@ -127,7 +127,7 @@ SYSCALL_DEFINE1(accevt_create, struct acc_motion __user *, acceleration) {
 	array.structs[place].motion = kmalloc(sizeof(struct acc_motion), __GFP_NORETRY);
 	array.structs[place].q = kmalloc(sizeof(wait_queue_head_t), __GFP_NORETRY);
 	array.structs[place].waking = kmalloc(sizeof(wait_queue_head_t), __GFP_NORETRY);
-	array.structs[place].falg = 0;
+	array.structs[place].flag = 0;
 	array.structs[place].num = 0;
 	array.structs[place].waking_num = 0;
 	*(array.structs[place].motion) = tmpMotion;
@@ -167,7 +167,7 @@ SYSCALL_DEFINE1(accevt_wait, int, event_id) {
 	spin_lock(&my_lock);
 	array.structs[event_id].waking_num--;
 	if (array.structs[event_id].flag == 2) {
-		if (array.structs[event_id]waking_num == 0) {
+		if (array.structs[event_id].waking_num == 0) {
 			kfree(array.structs[event_id].waking);
 			array.structs[event_id].waking = NULL;
 		}
