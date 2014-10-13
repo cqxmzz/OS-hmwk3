@@ -16,10 +16,7 @@ int launchOneDetector(int eventId, struct acc_motion motion)
 		exit(1);
 	if (pid == 0) {
 		/* Block a process on an event. */
-		printf("call wait\n");
 		if (syscall(380, eventId) == 0) {
-			
-			printf("call wait succeed\n");
 			if (motion.dlt_x != 0 && motion.dlt_y == 0
 				&& motion.dlt_z == 0) {
 				printf("%d detected a horizontal shake\n",
@@ -57,7 +54,6 @@ int main(int argc, const char *argv[])
 		fscanf(input, "%i\n", &numberOfDetectors);
 		if (numberOfDetectors > MAX)
 			numberOfDetectors = MAX;
-
 		for (i = 0; i < numberOfDetectors; i++) {
 			fscanf(input, "%u %u %u %u\n", &x, &y, &z, &frq);
 			motion.dlt_x = x;
@@ -65,19 +61,16 @@ int main(int argc, const char *argv[])
 			motion.dlt_z = z;
 			motion.frq = frq;
 			/* Create an event based on motion. */
-			printf("call create\n");
 			eventQueue[i] = syscall(379, &motion);
-			printf("created%d\n", eventQueue[i]);
 			launchOneDetector(eventQueue[i], motion);
 		}
 		sleep(65);
-
 		for (i = 0; i < numberOfDetectors; i++) {
 			/* Destroy an acceleration event using the event_id. */
 			syscall(382, eventQueue[i]);
 		}
 	} else {
-
+		printf("No Input File!\n");
 	}
 	fclose(input);
 	return 0;
