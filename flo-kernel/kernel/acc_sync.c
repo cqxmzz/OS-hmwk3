@@ -86,7 +86,12 @@ int find_next_place(void)
 		array.structs = kmalloc(10 * sizeof(struct motionStruct), __GFP_NORETRY);
 		array.size = 10;
 		for (i = 0; i < 10; ++i) {
-			array.structs[i] = {NULL, NULL, NULL, 0, 0, 0};
+			array.structs[i].motion = NULL;
+			array.structs[i].1 = NULL;
+			array.structs[i].waking = NULL;
+			array.structs[i].flag = 0;
+			array.structs[i].num = 0;
+			array.structs[i].waking_num = 0;
 		}
 		array.head = 0;
 	}
@@ -107,7 +112,12 @@ int find_next_place(void)
 	array.head = array.size;
 	array.size = array.size * 2;
 	for (i = array.size/2; i < array.size; ++i) {
-		array.structs[i] = {NULL, NULL, NULL, 0, 0, 0};
+		array.structs[i].motion = NULL;
+		array.structs[i].1 = NULL;
+		array.structs[i].waking = NULL;
+		array.structs[i].flag = 0;
+		array.structs[i].num = 0;
+		array.structs[i].waking_num = 0;
 	}
 	return array.head;
 }
