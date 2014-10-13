@@ -130,11 +130,15 @@ SYSCALL_DEFINE1(accevt_create, struct acc_motion __user *, acceleration) {
 	if (copy_from_user(&tmpMotion, acceleration, sizeof(struct acc_motion)) != 0)
 		return -EINVAL;
 	spin_lock(&my_lock);
+	printk("hold lock\n");
 	place = find_next_place();
+	printk("got place\n");
 	if (place < 0) {
+		printk("bad place\n");
 		spin_unlock(&my_lock);
 		return place;
 	}
+	printk("put value\n");
 	array.structs[place].motion = kmalloc(sizeof(struct acc_motion), __GFP_NORETRY);
 	array.structs[place].q = kmalloc(sizeof(wait_queue_head_t), __GFP_NORETRY);
 	array.structs[place].waking = kmalloc(sizeof(wait_queue_head_t), __GFP_NORETRY);
@@ -146,7 +150,9 @@ SYSCALL_DEFINE1(accevt_create, struct acc_motion __user *, acceleration) {
 	init_waitqueue_head(array.structs[place].waking);
 	if (array.structs[place].motion->frq > WINDOW)
 		array.structs[place].motion->frq = WINDOW;
+	printk("unlock\n");
 	spin_unlock(&my_lock);
+	printk("return\n");
 	return place;
 }
 
