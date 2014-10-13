@@ -87,7 +87,7 @@ int find_next_place(void)
 		array.size = 10;
 		for (i = 0; i < 10; ++i) {
 			array.structs[i].motion = NULL;
-			array.structs[i].1 = NULL;
+			array.structs[i].q = NULL;
 			array.structs[i].waking = NULL;
 			array.structs[i].flag = 0;
 			array.structs[i].num = 0;
@@ -113,7 +113,7 @@ int find_next_place(void)
 	array.size = array.size * 2;
 	for (i = array.size/2; i < array.size; ++i) {
 		array.structs[i].motion = NULL;
-		array.structs[i].1 = NULL;
+		array.structs[i].q = NULL;
 		array.structs[i].waking = NULL;
 		array.structs[i].flag = 0;
 		array.structs[i].num = 0;
