@@ -6,6 +6,7 @@
 #include <linux/syscalls.h>
 #include <linux/acceleration.h>
 #include <linux/acc_sync.h>
+#include <linux/acc_motion.h>
 #include <linux/kernel.h>
 
 #include <linux/unistd.h>

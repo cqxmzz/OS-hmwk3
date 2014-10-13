@@ -4,7 +4,7 @@
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <sys/syscall.h>
-#include "../flo-kernel/include/linux/acc_sync.h"
+#include "../flo-kernel/include/linux/acc_motion.h"
 
 #define MAX 20
 
