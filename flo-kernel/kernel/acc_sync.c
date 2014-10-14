@@ -153,7 +153,7 @@ SYSCALL_DEFINE1(accevt_create, struct acc_motion __user *, acceleration) {
 		array.structs[place].motion = NULL;
 		return -ENOMEM;
 	}
-	array.structs[i].sign = 0;
+	array.structs[place].sign = 0;
 	array.structs[place].head = 0;
 	array.structs[place].tail = 0;
 	array.structs[place].num_head = 0;
@@ -201,7 +201,7 @@ SYSCALL_DEFINE1(accevt_wait, int, event_id) {
 			, TASK_INTERRUPTIBLE);
 		if (signal_pending(current)) {
 			finish_wait(array.structs[event_id].q, &wait);
-			num_head--;
+			array.structs[event_id].num_head--;
 			return -ERESTARTSYS;
 		}
 		spin_unlock(&my_lock);
@@ -211,9 +211,9 @@ SYSCALL_DEFINE1(accevt_wait, int, event_id) {
 	finish_wait(array.structs[event_id].q, &wait);
 	if (smaller_than(num, array.structs[event_id].sign)) {
 		ret = 0;
-		num_tail--;
+		array.structs[event_id].num_tail--;
 	} else {
-		num_head--;
+		array.structs[event_id].num_head--;
 		ret = -EINVAL;
 	}
 	if (array.structs[event_id].motion == NULL
@@ -222,8 +222,8 @@ SYSCALL_DEFINE1(accevt_wait, int, event_id) {
 		kfree(array.structs[event_id].q);
 		array.structs[event_id].q = NULL;
 	} else if (array.structs[event_id].num_tail == 0)
-		tail = sign;
-	wake_up(array.structs[event_id].waking);
+		array.structs[event_id].tail = array.structs[event_id].sign;
+	wake_up(array.structs[event_id].q);
 	spin_unlock(&my_lock);
 	return ret;
 }

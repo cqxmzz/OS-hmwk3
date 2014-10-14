@@ -5,7 +5,7 @@
 
 extern spinlock_t my_lock;
 extern struct motionArray array;
-extern struct dev_acceleration sensorDataBuffer[WINDOW];
+extern struct dev_acceleration sensorDataBuffer[WINDOW+1];
 extern int sensorDataBufferHead;
 
 #endif
