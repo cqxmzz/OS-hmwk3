@@ -190,6 +190,8 @@ SYSCALL_DEFINE1(accevt_wait, int, event_id) {
 	while (array.structs[event_id].flag == 1) {
 		prepare_to_wait(array.structs[event_id].waking, &wait1
 			, TASK_INTERRUPTIBLE);
+		if (signal_pending(current))
+			return -ERESTARTSYS;
 		schedule();
 	}
 	finish_wait(array.structs[event_id].waking, &wait1);
@@ -210,6 +212,8 @@ SYSCALL_DEFINE1(accevt_wait, int, event_id) {
 	while ((ret = array.structs[event_id].flag) == 0) {
 		prepare_to_wait(array.structs[event_id].q, &wait2
 			, TASK_INTERRUPTIBLE);
+		if (signal_pending(current))
+			return -ERESTARTSYS;
 		schedule();
 	}
 	finish_wait(array.structs[event_id].q, &wait2);
