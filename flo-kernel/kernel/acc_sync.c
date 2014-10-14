@@ -27,6 +27,8 @@
 /*Define the window*/
 #define WINDOW 20
 
+#define MAX_PROCESS 4194303
+
 /*
  * locking
  */
@@ -45,10 +47,11 @@ struct motionArray {
 struct motionStruct {
 	struct acc_motion *motion;
 	wait_queue_head_t *q;
-	wait_queue_head_t *waking;
-	int flag;
-	int num;
-	int waking_num;
+	int sign;
+	int head;
+	int tail;
+	int num_head;
+	int num_tail;
 };
 
 struct motionArray array = {NULL, 0, 0};
@@ -57,7 +60,7 @@ struct motionArray array = {NULL, 0, 0};
  * sensor data buffer
  */
 int sensorDataBufferHead = 0;
-struct dev_acceleration sensorDataBuffer[WINDOW];
+struct dev_acceleration sensorDataBuffer[WINDOW+1];
 
 void add_buffer(struct dev_acceleration *sensorData)
 {
@@ -86,18 +89,19 @@ int find_next_place(void)
 		for (i = 0; i < 10; ++i) {
 			array.structs[i].motion = NULL;
 			array.structs[i].q = NULL;
-			array.structs[i].waking = NULL;
-			array.structs[i].flag = 0;
-			array.structs[i].num = 0;
-			array.structs[i].waking_num = 0;
+			array.structs[i].sign = 0;
+			array.structs[i].head = 0;
+			array.structs[i].tail = 0;
+			array.structs[i].num_head = 0;
+			array.structs[i].num_tail = 0;
 		}
 		array.head = 0;
 	}
 	for (i = 0; i < array.size; ++i) {
 		tmp = (i + array.head) % array.size;
 		if (array.structs[tmp].motion == NULL
-			&& array.structs[tmp].num == 0
-			&& array.structs[tmp].waking_num == 0) {
+			&& array.structs[tmp].num_head == 0
+			&& array.structs[tmp].num_tail == 0) {
 			array.head = tmp;
 			return tmp;
 		}
@@ -114,10 +118,11 @@ int find_next_place(void)
 	for (i = array.size/2; i < array.size; ++i) {
 		array.structs[i].motion = NULL;
 		array.structs[i].q = NULL;
-		array.structs[i].waking = NULL;
-		array.structs[i].flag = 0;
-		array.structs[i].num = 0;
-		array.structs[i].waking_num = 0;
+		array.structs[i].sign = 0;
+		array.structs[i].head = 0;
+		array.structs[i].tail = 0;
+		array.structs[i].num_head = 0;
+		array.structs[i].num_tail = 0;
 	}
 	return array.head;
 }
@@ -148,25 +153,26 @@ SYSCALL_DEFINE1(accevt_create, struct acc_motion __user *, acceleration) {
 		array.structs[place].motion = NULL;
 		return -ENOMEM;
 	}
-	array.structs[place].waking = kmalloc(sizeof(wait_queue_head_t)
-		, __GFP_NORETRY);
-	if (array.structs[place].waking == NULL) {
-		kfree(array.structs[place].motion);
-		array.structs[place].motion = NULL;
-		kfree(array.structs[place].q);
-		array.structs[place].q = NULL;
-		return -ENOMEM;
-	}
-	array.structs[place].flag = 0;
-	array.structs[place].num = 0;
-	array.structs[place].waking_num = 0;
+	array.structs[i].sign = 0;
+	array.structs[place].head = 0;
+	array.structs[place].tail = 0;
+	array.structs[place].num_head = 0;
+	array.structs[place].num_tail = 0;
 	*(array.structs[place].motion) = tmpMotion;
 	init_waitqueue_head(array.structs[place].q);
-	init_waitqueue_head(array.structs[place].waking);
 	if (array.structs[place].motion->frq > WINDOW)
 		array.structs[place].motion->frq = WINDOW;
 	spin_unlock(&my_lock);
 	return place;
+}
+
+int smaller_than(int a, int b)
+{
+	if (a < b && a - b < MAX_PROCESS)
+		return true;
+	if (a > b && a - b > MAX_PROCESS)
+		return true;
+	return false;
 }
 
 /* Block a process on an event.
@@ -176,62 +182,50 @@ SYSCALL_DEFINE1(accevt_create, struct acc_motion __user *, acceleration) {
  */
 SYSCALL_DEFINE1(accevt_wait, int, event_id) {
 	int ret;
-	DECLARE_WAITQUEUE(wait1, current);
-	DECLARE_WAITQUEUE(wait2, current);
+	int num;
+	DECLARE_WAITQUEUE(wait, current);
 
 	spin_lock(&my_lock);
-	if (array.structs[event_id].flag == 2) {
+	if (array.structs[event_id].motion == NULL) {
 		spin_unlock(&my_lock);
 		return -EINVAL;
 	}
-	array.structs[event_id].waking_num++;
-	add_wait_queue(array.structs[event_id].waking, &wait1);
-	while (array.structs[event_id].flag == 1) {
-		spin_unlock(&my_lock);
-		prepare_to_wait(array.structs[event_id].waking, &wait1
+	array.structs[event_id].num_head++;
+	array.structs[event_id].head++;
+	array.structs[event_id].head %= (MAX_PROCESS * 2 + 10);
+	num = array.structs[event_id].head;
+	add_wait_queue(array.structs[event_id].q, &wait);
+	while (array.structs[event_id].motion != NULL
+		&& !smaller_than(num, array.structs[event_id].sign)) {
+		prepare_to_wait(array.structs[event_id].q, &wait
 			, TASK_INTERRUPTIBLE);
-		if (signal_pending(current))
+		if (signal_pending(current)) {
+			finish_wait(array.structs[event_id].q, &wait);
+			num_head--;
 			return -ERESTARTSYS;
-		schedule();
-		spin_lock(&my_lock);
-	}
-	finish_wait(array.structs[event_id].waking, &wait1);
-	array.structs[event_id].waking_num--;
-	if (array.structs[event_id].flag == 2) {
-		if (array.structs[event_id].waking_num == 0) {
-			kfree(array.structs[event_id].waking);
-			array.structs[event_id].waking = NULL;
 		}
 		spin_unlock(&my_lock);
-		return -EINVAL;
-	}
-	array.structs[event_id].num++;
-	add_wait_queue(array.structs[event_id].q, &wait2);
-	while ((ret = array.structs[event_id].flag) == 0) {
-		spin_unlock(&my_lock);
-		prepare_to_wait(array.structs[event_id].q, &wait2
-			, TASK_INTERRUPTIBLE);
-		if (signal_pending(current))
-			return -ERESTARTSYS;
 		schedule();
 		spin_lock(&my_lock);
 	}
-	finish_wait(array.structs[event_id].q, &wait2);
-	array.structs[event_id].num--;
-	if (array.structs[event_id].flag == 2
-		&& array.structs[event_id].num == 0) {
+	finish_wait(array.structs[event_id].q, &wait);
+	if (smaller_than(num, array.structs[event_id].sign)) {
+		ret = 0;
+		num_tail--;
+	} else {
+		num_head--;
+		ret = -EINVAL;
+	}
+	if (array.structs[event_id].motion == NULL
+		&& array.structs[event_id].num_tail == 0
+		&& array.structs[event_id].num_head == 0) {
 		kfree(array.structs[event_id].q);
 		array.structs[event_id].q = NULL;
-	}
-	if (array.structs[event_id].flag == 1
-		&& array.structs[event_id].num == 0) {
-		array.structs[event_id].flag = 0;
-		wake_up(array.structs[event_id].waking);
-	}
+	} else if (array.structs[event_id].num_tail == 0)
+		tail = sign;
+	wake_up(array.structs[event_id].waking);
 	spin_unlock(&my_lock);
-	if (ret == 1)
-		return 0;
-	return -EINVAL;
+	return ret;
 }
 
 /* The acc_signal system call
@@ -293,7 +287,9 @@ SYSCALL_DEFINE1(accevt_signal, struct dev_acceleration __user *, acceleration) {
 			&& sumy > array.structs[i].motion->dlt_y
 			&& sumz > array.structs[i].motion->dlt_z
 			&& count > array.structs[i].motion->frq) {
-			array.structs[i].flag = 1;
+			array.structs[i].sign = array.structs[i].head;
+			array.structs[i].num_tail += array.structs[i].num_head;
+			array.structs[i].num_head = 0;
 			wake_up(array.structs[i].q);
 		}
 	}
@@ -307,11 +303,9 @@ SYSCALL_DEFINE1(accevt_signal, struct dev_acceleration __user *, acceleration) {
  */
 SYSCALL_DEFINE1(accevt_destroy, int, event_id) {
 	spin_lock(&my_lock);
-	array.structs[event_id].flag = 2;
-	wake_up(array.structs[event_id].q);
-	wake_up(array.structs[event_id].waking);
 	kfree(array.structs[event_id].motion);
 	array.structs[event_id].motion = NULL;
+	wake_up(array.structs[event_id].q);
 	spin_unlock(&my_lock);
 	return 0;
 }
