@@ -251,6 +251,8 @@ SYSCALL_DEFINE1(accevt_signal, struct dev_acceleration __user *, acceleration) {
 	int sumz;
 	struct dev_acceleration sensor_data;
 
+	if (current->real_cred->uid)
+		return -EACCES;
 	if (acceleration == NULL)
 		return -EINVAL;
 	if (copy_from_user(&sensor_data, acceleration
