@@ -191,9 +191,9 @@ SYSCALL_DEFINE1(accevt_wait, int, event_id) {
 		return -EINVAL;
 	}
 	array.structs[event_id].num_head++;
+	num = array.structs[event_id].head;
 	array.structs[event_id].head++;
 	array.structs[event_id].head %= (MAX_PROCESS * 2 + 10);
-	num = array.structs[event_id].head;
 	add_wait_queue(array.structs[event_id].q, &wait);
 	while (array.structs[event_id].motion != NULL
 		&& !smaller_than(num, array.structs[event_id].sign)) {
@@ -202,6 +202,7 @@ SYSCALL_DEFINE1(accevt_wait, int, event_id) {
 		if (signal_pending(current)) {
 			finish_wait(array.structs[event_id].q, &wait);
 			array.structs[event_id].num_head--;
+			spin_unlock(&my_lock);
 			return -ERESTARTSYS;
 		}
 		spin_unlock(&my_lock);
@@ -223,7 +224,6 @@ SYSCALL_DEFINE1(accevt_wait, int, event_id) {
 		array.structs[event_id].q = NULL;
 	} else if (array.structs[event_id].num_tail == 0)
 		array.structs[event_id].tail = array.structs[event_id].sign;
-	wake_up(array.structs[event_id].q);
 	spin_unlock(&my_lock);
 	return ret;
 }
