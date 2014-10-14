@@ -68,22 +68,25 @@ int main(int argc, const char *argv[])
 
 	} else {
 		printf("No Input File!\n");
-		printf("Input in format: dlt_x dlt_y dlt_z frq, ");
-		printf("other format to finish\n");
-		for (i = 0; i < MAX; i++) {
-			printf("Type in one detector: ");
-			if (scanf("%u %u %u %u", &x, &y, &z, &frq) == 4) {
-				motion.dlt_x = x;
-				motion.dlt_y = y;
-				motion.dlt_z = z;
-				motion.frq = frq;
-				/* Create an event based on motion. */
-				eventQueue[i] = syscall(379, &motion);
-				launchOneDetector(eventQueue[i], motion);
-			} else
-				break;
-		}
-		numberOfDetectors = i;
+		motion.dlt_x = 3000;
+		motion.dlt_y = 0;
+		motion.dlt_z = 0;
+		motion.frq = 5;
+		eventQueue[0] = syscall(379, &motion);
+		launchOneDetector(eventQueue[0], motion);
+		motion.dlt_x = 0;
+		motion.dlt_y = 3000;
+		motion.dlt_z = 0;
+		motion.frq = 5;
+		eventQueue[1] = syscall(379, &motion);
+		launchOneDetector(eventQueue[1], motion);
+		motion.dlt_x = 0;
+		motion.dlt_y = 0;
+		motion.dlt_z = 3000;
+		motion.frq = 5;
+		eventQueue[2] = syscall(379, &motion);
+		launchOneDetector(eventQueue[2], motion);
+		numberOfDetectors = 3;
 	}
 	sleep(65);
 	for (i = 0; i < numberOfDetectors; i++) {
@@ -91,5 +94,6 @@ int main(int argc, const char *argv[])
 		syscall(382, eventQueue[i]);
 	}
 	fclose(input);
+	input = NULL;
 	return 0;
 }

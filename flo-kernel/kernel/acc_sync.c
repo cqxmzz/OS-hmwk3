@@ -185,17 +185,17 @@ SYSCALL_DEFINE1(accevt_wait, int, event_id) {
 		return -EINVAL;
 	}
 	array.structs[event_id].waking_num++;
-	spin_unlock(&my_lock);
 	add_wait_queue(array.structs[event_id].waking, &wait1);
 	while (array.structs[event_id].flag == 1) {
+		spin_unlock(&my_lock);
 		prepare_to_wait(array.structs[event_id].waking, &wait1
 			, TASK_INTERRUPTIBLE);
 		if (signal_pending(current))
 			return -ERESTARTSYS;
 		schedule();
+		spin_lock(&my_lock);
 	}
 	finish_wait(array.structs[event_id].waking, &wait1);
-	spin_lock(&my_lock);
 	array.structs[event_id].waking_num--;
 	if (array.structs[event_id].flag == 2) {
 		if (array.structs[event_id].waking_num == 0) {
@@ -206,18 +206,17 @@ SYSCALL_DEFINE1(accevt_wait, int, event_id) {
 		return -EINVAL;
 	}
 	array.structs[event_id].num++;
-	spin_unlock(&my_lock);
-
 	add_wait_queue(array.structs[event_id].q, &wait2);
 	while ((ret = array.structs[event_id].flag) == 0) {
+		spin_unlock(&my_lock);
 		prepare_to_wait(array.structs[event_id].q, &wait2
 			, TASK_INTERRUPTIBLE);
 		if (signal_pending(current))
 			return -ERESTARTSYS;
 		schedule();
+		spin_lock(&my_lock);
 	}
 	finish_wait(array.structs[event_id].q, &wait2);
-	spin_lock(&my_lock);
 	array.structs[event_id].num--;
 	if (array.structs[event_id].flag == 2
 		&& array.structs[event_id].num == 0) {
